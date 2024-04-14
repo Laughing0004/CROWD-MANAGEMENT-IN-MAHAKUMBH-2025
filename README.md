@@ -1,1 +1,63 @@
 # CROWD-MANAGEMENT-IN-MAHAKUMBH-2025
+
+import cv2
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.neighbors import KernelDensity
+
+def kmeans_segmentation(image, n_clusters=2):
+    flattened_image = image.reshape((-1, 3))
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(flattened_image)
+    segmented_image = kmeans.cluster_centers_[kmeans.labels_]
+    segmented_image = segmented_image.reshape(image.shape).astype(np.uint8)  # Convert to uint8
+    return segmented_image
+
+def kde_density_prediction(image):
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    kernel_size = 15
+    density_map = cv2.GaussianBlur(gray_image, (kernel_size, kernel_size), 0)
+    return density_map
+
+def color_code_density(image, density_map, thresholds=(50, 100)):
+    # Threshold the density map to distinguish between different density levels
+    dense_mask = density_map > thresholds[1]
+    medium_dense_mask = (density_map <= thresholds[1]) & (density_map > thresholds[0])
+    low_dense_mask = density_map <= thresholds[0]
+
+    # Create color masks for different density levels
+    dense_color = np.array([0, 200, 0])    # Green color for dense areas
+    medium_dense_color = np.array([0, 165, 255])  # Orange color for medium dense areas
+    low_dense_color = np.array([0, 0, 200])  # Red color for low dense areas
+
+    color_coded_image = np.zeros_like(image)
+    color_coded_image[dense_mask] = dense_color
+    color_coded_image[medium_dense_mask] = medium_dense_color
+    color_coded_image[low_dense_mask] = low_dense_color
+
+    return color_coded_image
+
+def main(image_path):
+    # Load the new image
+    image = cv2.imread(image_path)
+
+    # Step 2: Perform segmentation
+    segmented_image = kmeans_segmentation(image)
+
+    # Step 3: Density prediction
+    density_map = kde_density_prediction(image)
+
+    # Step 4: Color coding
+    color_coded_image = color_code_density(image, density_map)
+
+    # Step 5: Display the results
+    cv2.imshow('Original Image', image)
+    cv2.imshow('Segmented Image', segmented_image)
+    cv2.imshow('Density Map', density_map)
+    cv2.imshow('Color Coded Density', color_coded_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+if _name_ == "_main_":
+    image_path = r"C:\Users\singh\Downloads\c.jpg"
+    main(image_path)
